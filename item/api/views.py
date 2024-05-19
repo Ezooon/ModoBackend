@@ -1,11 +1,11 @@
 from django_filters.rest_framework import DjangoFilterBackend
 from .serializers import ItemSerializer, Item, CartSerializer, CreateCartSerializer, Cart, Category, CategorySerializer
-
+from django.utils import timezone
 from rest_framework.generics import ListCreateAPIView, RetrieveUpdateDestroyAPIView, ListAPIView
 from rest_framework.authentication import TokenAuthentication
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
-from rest_framework import filters
+from rest_framework import filters, status
 
 
 class ListItems(ListCreateAPIView):
@@ -14,7 +14,7 @@ class ListItems(ListCreateAPIView):
     ordering_fields = ['name', 'price', "?"]
     filter_backends = [filters.SearchFilter, filters.OrderingFilter, DjangoFilterBackend]
     ordering = 'name'
-    filterset_fields = ['category', 'stock', 'add_by', 'price']
+    filterset_fields = ['category', 'category__name', 'stock', 'add_by', 'price']
     search_fields = ['name']#, 'description']
 
     def get(self, request, *args, **kwargs):
@@ -51,7 +51,22 @@ class ListCarts(ListCreateAPIView):
 
     def post(self, request, *args, **kwargs):
         request.data["user"] = request.user.id
+        if request.user.chat.cart:
+            return Response({"detail": "finish or cancel your current order first"}, status.HTTP_409_CONFLICT)
         return super().post(request, *args, **kwargs)
+
+
+class CartDetail(RetrieveUpdateDestroyAPIView):
+    queryset = Cart.objects.all()
+    serializer_class = CartSerializer
+    authentication_classes = [TokenAuthentication]
+    permission_classes = [IsAuthenticated]
+
+    def delete(self, request, *args, **kwargs):
+        cart = self.get_object()
+        cart.canceled = timezone.now()
+        cart.canceled_by = self.request.user
+        return Response({'canceled': True}, status.HTTP_200_OK)
 
 
 class ListCategories(ListAPIView):

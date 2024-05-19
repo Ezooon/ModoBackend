@@ -1,5 +1,15 @@
 from rest_framework.serializers import ModelSerializer, ImageField
-from ..models import Message
+from ..models import Message, Chat
+from item.api.serializers import CartSerializer
+
+
+class ChatSerializer(ModelSerializer):
+    cart = CartSerializer()
+    image = ImageField()
+
+    class Meta:
+        model = Chat
+        fields = ["id", "chat_name", "image", "owner", "handler", "cart"]
 
 
 class MessageSerializer(ModelSerializer):

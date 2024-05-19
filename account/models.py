@@ -44,7 +44,8 @@ class Account(AbstractBaseUser, PermissionsMixin):
 
     email = models.EmailField('Email', unique=True)
 
-    image = models.ImageField('Profile Image', upload_to=image_path, null=True, blank=True)
+    image = models.ImageField('Profile Image', upload_to=image_path, null=True, blank=True,
+                              default="account/accounts_images/default.jpg")
 
     account_type = models.CharField(max_length=2, choices={
         "AD": "Admin",  # a smi-total control over the app
@@ -61,11 +62,16 @@ class Account(AbstractBaseUser, PermissionsMixin):
 
     reported = models.BooleanField(default=False)
 
+
     REQUIRED_FIELDS = ['email']
     USERNAME_FIELD = 'username'
     is_active = models.BooleanField(default=True)
     is_staff = models.BooleanField(default=False)
     objects = AccountsManager()
+
+    @property
+    def greating_message(self):
+        return f"Hi I'm {self.username} I'll be handling your order!"
 
 
 class FavoriteItem(models.Model):

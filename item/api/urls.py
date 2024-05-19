@@ -1,5 +1,5 @@
 from django.urls import path
-from .views import ItemDetail, ListItems, ListCarts, ListCategories
+from .views import ItemDetail, ListItems, ListCarts, ListCategories, CartDetail
 
 
 urlpatterns = [
@@ -7,5 +7,6 @@ urlpatterns = [
     path("all-items/", ListItems.as_view()),
     path("carts/", ListCarts.as_view()),
     path("carts/order/", ListCarts.as_view()),
-    path("categories/", ListCategories.as_view())
+    path("categories/", ListCategories.as_view()),
+    path("carts/<int:pk>/", CartDetail.as_view())
 ]

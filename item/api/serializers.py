@@ -1,6 +1,5 @@
 from rest_framework.serializers import ModelSerializer, ImageField, StringRelatedField
 from ..models import Item, Cart, CartItem, Category
-from chat.api.serializers import Message, MessageSerializer
 from account.models import Account
 
 
@@ -28,7 +27,6 @@ class CartItemSerializer(ModelSerializer):
 
 
 class CreateCartItemSerializer(ModelSerializer):
-
     class Meta:
         model = CartItem
         fields = ["id", "item", "amount"]
@@ -39,7 +37,10 @@ class CartSerializer(ModelSerializer):
 
     class Meta:
         model = Cart
-        fields = ["id", "cart_items", "add_date", "delivered"]
+        fields = ["id", "count", "total", "add_date", "delivered", "cart_items"]
+
+
+from chat.api.serializers import Message, MessageSerializer
 
 
 class CreateCartSerializer(ModelSerializer):
@@ -82,14 +83,23 @@ class CreateCartSerializer(ModelSerializer):
         Item.objects.bulk_update(items, ['stock'])
         cart.cart_items.bulk_create(c_items)
 
+        admin_bot = Account.objects.get(pk=1)
+
         cart.message = Message.objects.create(chat=cart.user.chat, sent_by=cart.user, content=str(cart))
+        # cart.user.chat.handler = admin_bot
+        cart.user.chat.cart = cart
+        cart.user.chat.save()
 
         # ToDo Have a dedicated user to send these messages
-        Message.objects.create(chat=cart.user.chat, sent_by=Account.objects.get(pk=1), sent_to=cart.user,
-                               content="{0} {1} out of stock.\n{2}".format(
-                                   " & ".join(oos),
-                                   "are" if len(oos) > 1 else "is",
-                                   '\n'.join(short)))
+        Message.objects.create(chat=cart.user.chat, sent_by=admin_bot, sent_to=cart.user,
+                               content=(
+                                           "{0} {1} out of stock.\n".format(
+                                               " & ".join(oos),
+                                               "are" if len(oos) > 1 else "is") if oos else "") + \
+                                           '\n'.join(short) + ("\n" if short else "") + \
+                                           "An employee will be with you shortly"
+                               )
+
         cart.save()
 
         return cart

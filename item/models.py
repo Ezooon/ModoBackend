@@ -1,10 +1,7 @@
 import json
 
 from django.db import models
-from django.conf import settings
-from django.dispatch import receiver
-from django.utils import timezone, crypto
-from django.db.models.signals import pre_save
+from django.utils import timezone
 
 
 # Create your models here.
@@ -51,6 +48,7 @@ class Item(models.Model):
 
     # slug = models.SlugField(null=True, unique=True, max_length=25)
     category = models.ForeignKey(Category, on_delete=models.SET_NULL, null=True, default=None)
+
     # default to 'others'
 
     def __str__(self):
@@ -66,10 +64,21 @@ class Cart(models.Model):
 
     message = models.ForeignKey(to="chat.Message", on_delete=models.SET_NULL, null=True, blank=True)
 
+    canceled = models.DateTimeField(null=True, blank=True)
+
+    canceled_by = models.ForeignKey("account.Account", null=True, blank=True,
+                                    on_delete=models.DO_NOTHING, related_name="canceled_carts")
+
     delivered = models.DateTimeField(null=True, blank=True)
 
-    # keeper = models.ForeignKey("account.Account", on_delete=models.DO_NOTHING, related_name="kept_carts")
-    # ToDo add this keeper field to track who's the item with at the moment.
+    delivered_by = models.ForeignKey("account.Account", null=True, blank=True,
+                                     on_delete=models.DO_NOTHING, related_name="delivered_carts")
+
+    holder = models.ForeignKey("account.Account", null=True, blank=True,
+                               on_delete=models.DO_NOTHING, related_name="held_carts")
+
+    # holder field to track who's the items with at the moment.
+    # ToDo the admin or manager will set this to whoever's handling the order when they give them the items.
 
     @property
     def count(self):

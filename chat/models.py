@@ -5,15 +5,25 @@ from django.utils import timezone
 class Chat(models.Model):
     # Chat room model
 
+    @property
+    def chat_name(self):
+        return self.owner.username
+
     owner = models.OneToOneField("account.Account", on_delete=models.CASCADE, related_name="chat")
     # these are clients
+
+    @property
+    def image(self):
+        return self.owner.image
 
     handler = models.ForeignKey("account.Account", on_delete=models.SET_NULL,
                                 blank=True, null=True, related_name="clients")
     # these are the delivery people
 
+    cart = models.OneToOneField('item.Cart', on_delete=models.SET_NULL, blank=True, null=True, related_name="chat")
+
     def __str__(self):
-        return self.owner.username
+        return self.chat_name
 
 
 class Message(models.Model):
@@ -42,7 +52,7 @@ class Message(models.Model):
             chatting_with = "⇨ <" + str(self.sent_to)
         if len(short_content) > 30:
             short_content = short_content[:30] + "..."
-        return f"<{self.chat.owner}> {chatting_with}>: \"{short_content}\""
+        return f"<{self.id}:{self.chat.owner}> {chatting_with}>: \"{short_content}\""
 
     class Meta:
         ordering = ["sent"]
