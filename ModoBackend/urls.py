@@ -16,8 +16,11 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.urls import path, include
+from .views import home_view, download_view
 
 urlpatterns = [
+    path("", home_view),
+    path("get_modo/", download_view),
     path('admin/', admin.site.urls),
 
     path('account/', include('account.urls')),
