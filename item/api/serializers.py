@@ -4,12 +4,19 @@ from account.models import Account
 
 
 class ItemSerializer(ModelSerializer):
-    image = ImageField(use_url=True)
+    image = ImageField(use_url=True, required=False)
     category = StringRelatedField()
 
     class Meta:
         model = Item
-        fields = ["id", "name", "description", "price", "image", "category", "add_by", "stock"]
+        fields = ["id", "name", "description", "price", "image", "category", "add_by", "stock", "last_modified"]
+
+
+class CreateItemSerializer(ModelSerializer):
+
+    class Meta:
+        model = Item
+        fields = ["id", "name", "description", "price", "image", "category", "add_by", "stock", "last_modified"]
 
 
 class CategorySerializer(ModelSerializer):

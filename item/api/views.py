@@ -1,21 +1,23 @@
 from django_filters.rest_framework import DjangoFilterBackend
-from .serializers import ItemSerializer, Item, CartSerializer, CreateCartSerializer, Cart, Category, CategorySerializer
+from rest_framework.parsers import FileUploadParser, MultiPartParser, FormParser
+
+from .serializers import ItemSerializer, Item, CartSerializer, CreateCartSerializer, Cart, Category, CategorySerializer, CreateItemSerializer
 from django.utils import timezone
-from rest_framework.generics import ListCreateAPIView, RetrieveUpdateDestroyAPIView, ListAPIView
+from rest_framework.generics import ListCreateAPIView, RetrieveUpdateDestroyAPIView, ListAPIView, CreateAPIView
 from rest_framework.authentication import TokenAuthentication
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
-from rest_framework import filters, status
+from rest_framework import filters, status, decorators
 
 
-class ListItems(ListCreateAPIView):
+class ListItems(ListAPIView):
     queryset = Item.objects.all()
     serializer_class = ItemSerializer
     ordering_fields = ['name', 'price', "?"]
     filter_backends = [filters.SearchFilter, filters.OrderingFilter, DjangoFilterBackend]
     ordering = 'name'
     filterset_fields = ['category', 'category__name', 'stock', 'add_by', 'price']
-    search_fields = ['name']#, 'description']
+    search_fields = ['name']
 
     def get(self, request, *args, **kwargs):
         queryset = self.filter_queryset(self.get_queryset())
@@ -29,9 +31,44 @@ class ListItems(ListCreateAPIView):
         return Response(serializer.data)
 
 
+class CreateItem(CreateAPIView):
+    queryset = Item.objects.all()
+    serializer_class = CreateItemSerializer
+    authentication_classes = [TokenAuthentication]
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, *args, **kwargs):
+        data = dict(request.data)
+        if "category" in request.data:
+            category = Category.objects.get_or_create(name=request.data["category"])[0]
+            data["category"] = category.id
+
+        data["add_by"] = request.user.id
+        data["last_modified"] = timezone.now()
+        serializer = self.get_serializer(data=data)
+        serializer.is_valid(raise_exception=True)
+        self.perform_create(serializer)
+        headers = self.get_success_headers(serializer.data)
+        return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
+
+
 class ItemDetail(RetrieveUpdateDestroyAPIView):
     queryset = Item.objects.all()
-    serializer_class = ItemSerializer
+    serializer_class = CreateItemSerializer
+    authentication_classes = [TokenAuthentication]
+    permission_classes = [IsAuthenticated]
+
+    def patch(self, request, *args, **kwargs):
+        data = dict(request.data)
+        if "category" in request.data:
+            category = Category.objects.get_or_create(name=request.data["category"])[0]
+            data["category"] = category.id
+
+        instance = self.get_object()
+        serializer = self.get_serializer(instance, data=data, partial=True)
+        serializer.is_valid(raise_exception=True)
+        self.perform_update(serializer)
+        return Response(serializer.data)
 
 
 class ListCarts(ListCreateAPIView):
@@ -74,3 +111,16 @@ class ListCategories(ListAPIView):
     search_fields = ['name']
     serializer_class = CategorySerializer
     pagination_class = None
+
+
+@decorators.api_view(['PATCH'])
+@decorators.authentication_classes([TokenAuthentication])
+@decorators.permission_classes([IsAuthenticated])
+@decorators.parser_classes([FileUploadParser])
+def set_item_image(request, pk, filename):
+    img = request.data["file"]
+    item = Item.objects.get(pk=pk)
+    item.image = img
+    item.last_modified = timezone.now()
+    item.save()
+    Response(status=status.HTTP_200_OK)

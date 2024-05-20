@@ -35,7 +35,7 @@ class Item(models.Model):
 
     price = models.DecimalField(max_digits=8, decimal_places=2)
 
-    image = models.ImageField(upload_to=item_image_path)
+    image = models.ImageField(upload_to=item_image_path, default="item/item_images/default.jpg")
 
     stock = models.IntegerField('in stock')
 
@@ -76,7 +76,6 @@ class Cart(models.Model):
 
     holder = models.ForeignKey("account.Account", null=True, blank=True,
                                on_delete=models.DO_NOTHING, related_name="held_carts")
-
     # holder field to track who's the items with at the moment.
     # ToDo the admin or manager will set this to whoever's handling the order when they give them the items.
 
