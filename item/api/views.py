@@ -123,4 +123,4 @@ def set_item_image(request, pk, filename):
     item.image = img
     item.last_modified = timezone.now()
     item.save()
-    Response(status=status.HTTP_200_OK)
+    return Response(status=status.HTTP_200_OK)

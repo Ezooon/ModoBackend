@@ -1,3 +1,5 @@
+from rest_framework.parsers import FileUploadParser
+
 from .serializers import SignUpSerializer, Account, FavoriteSerializer, FavoriteItem, AccountSerializer
 from item.api.serializers import ItemSerializer
 from rest_framework.generics import CreateAPIView, ListCreateAPIView, RetrieveUpdateDestroyAPIView
@@ -6,7 +8,7 @@ from rest_framework.authtoken.views import ObtainAuthToken
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.authtoken.models import Token
 from rest_framework.response import Response
-from rest_framework import status
+from rest_framework import status, decorators
 
 
 class SignUpView(CreateAPIView):
@@ -80,3 +82,14 @@ class AccountDetails(RetrieveUpdateDestroyAPIView):
 
     def delete(self, request, *args, **kwargs):
         pass  # ToDo you just can't leave it like this
+
+
+@decorators.api_view(['PATCH'])
+@decorators.authentication_classes([TokenAuthentication])
+@decorators.permission_classes([IsAuthenticated])
+@decorators.parser_classes([FileUploadParser])
+def update_profile_photo(request, filename):
+    img = request.data["file"]
+    request.user.image = img
+    request.user.save()
+    return Response({}, status=status.HTTP_200_OK)
